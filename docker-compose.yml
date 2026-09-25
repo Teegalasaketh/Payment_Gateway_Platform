@@ -1,0 +1,211 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: aegis-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_MULTIPLE_DATABASES: auth_db,payment_db,transaction_db,fraud_db,webhook_db,merchant_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backend/postgres-init/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
+    networks:
+      - aegis-network
+
+  redis:
+    image: redis:7
+    container_name: aegis-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - aegis-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    container_name: aegis-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - aegis-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: aegis-kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - aegis-network
+
+  config-server:
+    build:
+      context: ./backend/config-server
+    container_name: aegis-config-server
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: native
+    networks:
+      - aegis-network
+
+  discovery-server:
+    build:
+      context: ./backend/discovery-server
+    container_name: aegis-discovery-server
+    ports:
+      - "8761:8761"
+    depends_on:
+      - config-server
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+    networks:
+      - aegis-network
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+    container_name: aegis-api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - discovery-server
+      - redis
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_HOST: discovery-server
+      REDIS_HOST: redis
+      JWT_SECRET: ${JWT_SECRET:-aegissecretkeyforpaymentgatewaysecuritysystemjwtvalidations}
+    networks:
+      - aegis-network
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+    container_name: aegis-auth-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+      - redis
+      - discovery-server
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_HOST: discovery-server
+      REDIS_HOST: redis
+      DB_HOST: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+    networks:
+      - aegis-network
+
+  merchant-service:
+    build:
+      context: ./backend/merchant-service
+    container_name: aegis-merchant-service
+    ports:
+      - "8088:8088"
+    depends_on:
+      - postgres
+      - discovery-server
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_HOST: discovery-server
+      DB_HOST: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+    networks:
+      - aegis-network
+
+  payment-service:
+    build:
+      context: ./backend/payment-service
+    container_name: aegis-payment-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+      - kafka
+      - discovery-server
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_HOST: discovery-server
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      DB_HOST: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+    networks:
+      - aegis-network
+
+  transaction-service:
+    build:
+      context: ./backend/transaction-service
+    container_name: aegis-transaction-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres
+      - kafka
+      - discovery-server
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_HOST: discovery-server
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      DB_HOST: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+    networks:
+      - aegis-network
+
+  fraud-service:
+    build:
+      context: ./backend/fraud-service
+    container_name: aegis-fraud-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - postgres
+      - kafka
+      - discovery-server
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_HOST: discovery-server
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      DB_HOST: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+    networks:
+      - aegis-network
+
+  webhook-service:
+    build:
+      context: ./backend/webhook-service
+    container_name: aegis-webhook-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      - postgres
+      - kafka
+      - discovery-server
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_HOST: discovery-server
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      DB_HOST: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+    networks:
+      - aegis-network
+
+volumes:
+  postgres-data:
+
+networks:
+  aegis-network:
+    driver: bridge

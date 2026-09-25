@@ -1,0 +1,89 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**, /api/users/**
+          filters:
+            - JwtValidationFilter
+
+        - id: merchant-service
+          uri: lb://merchant-service
+          predicates:
+            - Path=/api/merchants/**
+          filters:
+            - JwtValidationFilter
+
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/**
+          filters:
+            - JwtValidationFilter
+
+        - id: transaction-service
+          uri: lb://transaction-service
+          predicates:
+            - Path=/api/transactions/**
+          filters:
+            - JwtValidationFilter
+
+        - id: fraud-service
+          uri: lb://fraud-service
+          predicates:
+            - Path=/api/fraud/**
+          filters:
+            - JwtValidationFilter
+
+        - id: webhook-service
+          uri: lb://webhook-service
+          predicates:
+            - Path=/api/webhooks/**
+          filters:
+            - JwtValidationFilter
+
+        - id: ai-service
+          uri: lb://ai-service
+          predicates:
+            - Path=/api/ai/**
+          filters:
+            - JwtValidationFilter
+
+        - id: audit-service
+          uri: lb://audit-service
+          predicates:
+            - Path=/api/audit/**
+          filters:
+            - JwtValidationFilter
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
+  instance:
+    prefer-ip-address: true

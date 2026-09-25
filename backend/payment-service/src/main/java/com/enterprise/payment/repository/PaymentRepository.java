@@ -1,0 +1,11 @@
+package com.enterprise.payment.repository;
+
+import com.enterprise.payment.entity.Payment;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface PaymentRepository extends JpaRepository<Payment, String> {
+    List<Payment> findByMerchantEmail(String merchantEmail);
+}

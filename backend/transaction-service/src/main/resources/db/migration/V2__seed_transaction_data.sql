@@ -1,0 +1,12 @@
+INSERT INTO transactions (id, payment_id, type, amount, status, response_code, risk_score, timestamp)
+VALUES
+('TXN-000001', 'PAY-000001', 'DEBIT', 1250.00, 'Success', 200, 12, CURRENT_DATE - INTERVAL '6 day'),
+('TXN-000002', 'PAY-000002', 'DEBIT', 3200.50, 'Success', 200, 8, CURRENT_DATE - INTERVAL '5 day'),
+('TXN-000003', 'PAY-000003', 'DEBIT', 150.00, 'Failed', 400, 99, CURRENT_DATE - INTERVAL '5 day'),
+('TXN-000004', 'PAY-000004', 'DEBIT', 4500.00, 'Success', 200, 5, CURRENT_DATE - INTERVAL '4 day'),
+('TXN-000005', 'PAY-000005', 'DEBIT', 850.25, 'Success', 200, 15, CURRENT_DATE - INTERVAL '3 day'),
+('TXN-000006', 'PAY-000006', 'DEBIT', 120.00, 'Pending', null, 14, CURRENT_DATE - INTERVAL '2 day'),
+('TXN-000007', 'PAY-000007', 'DEBIT', 9500.00, 'Success', 200, 9, CURRENT_DATE - INTERVAL '2 day'),
+('TXN-000008', 'PAY-000008', 'DEBIT', 210.00, 'Success', 200, 11, CURRENT_DATE - INTERVAL '1 day'),
+('TXN-000009', 'PAY-000009', 'DEBIT', 1500.00, 'Success', 200, 16, CURRENT_DATE),
+('TXN-000010', 'PAY-000010', 'DEBIT', 350.00, 'Failed', 400, 85, CURRENT_DATE);

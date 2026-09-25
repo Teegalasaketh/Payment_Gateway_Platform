@@ -1,0 +1,4 @@
+# Aegis Centralized Microservices Configuration Registry
+spring:
+  jpa:
+    open-in-view: false
