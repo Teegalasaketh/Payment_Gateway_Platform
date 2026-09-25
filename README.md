@@ -1,4 +1,4 @@
-# Aegis Enterprise Payment Gateway Platform
+# Payment Gateway Platform
 
 An enterprise-grade, high-throughput payment orchestration and anomaly monitoring console built with **Spring Boot** and **React (Vite/TS/Tailwind)**.
 
